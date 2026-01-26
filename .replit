@@ -1,0 +1,6 @@
+run = "python app.py"
+modules = ["python-3.10"]
+
+[nix]
+channel = "unstable"
+packages = ["python310"]
