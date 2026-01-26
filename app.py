@@ -3,10 +3,11 @@ Online Admission System with QR Code
 Secure Flask application for collecting admission data
 """
 
-from flask import Flask, render_template, request, jsonify, send_file, url_for
+from flask import Flask, render_template, request, jsonify, send_file, url_for, session, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash, generate_password_hash
 import qrcode
 import os
 import secrets
@@ -14,6 +15,7 @@ from datetime import datetime
 from io import BytesIO
 import base64
 import hashlib
+from functools import wraps
 
 # Configuration
 app = Flask(__name__)
@@ -22,6 +24,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///admissions.db'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+# Admin credentials (change these!)
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123'))
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -67,6 +73,16 @@ def get_client_ip():
     return request.remote_addr
 
 
+def login_required(f):
+    """Decorator to require admin login"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 def generate_qr_code(data):
     """Generate QR code as base64 image"""
     qr = qrcode.QRCode(
@@ -105,7 +121,31 @@ def admission_form():
     return render_template('admission_form.html')
 
 
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login page"""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, password):
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return render_template('admin_login.html', error='Invalid credentials')
+    
+    return render_template('admin_login.html')
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Admin logout"""
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
+
+
 @app.route('/admin')
+@login_required
 def admin_dashboard():
     """Admin dashboard to view admissions"""
     return render_template('admin.html')
@@ -183,14 +223,15 @@ def submit_admission():
 
 
 @app.route('/api/admissions', methods=['GET'])
+@login_required
 def get_admissions():
     """Get all admissions (admin endpoint)"""
-    # In production, add authentication here
     admissions = Admission.query.all()
     return jsonify([adm.to_dict() for adm in admissions])
 
 
 @app.route('/api/admissions/<int:admission_id>', methods=['GET'])
+@login_required
 def get_admission(admission_id):
     """Get specific admission"""
     admission = Admission.query.get_or_404(admission_id)
@@ -198,6 +239,7 @@ def get_admission(admission_id):
 
 
 @app.route('/api/admissions/<int:admission_id>/picture')
+@login_required
 def get_picture(admission_id):
     """Get admission picture"""
     admission = Admission.query.get_or_404(admission_id)
