@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Admissions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .refresh-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            color: #666;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-submitted {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-verified {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .status-approved {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #764ba2;
+        }
+
+        .btn-download {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #45a049;
+        }
+
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #da190b;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .detail-row {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            color: #666;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .preview-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .loading::after {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto 0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stats {
+                width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📊 Admin Dashboard</h1>
+                <p style="color: #999; margin-top: 5px;">Manage admission submissions</p>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">Total Submissions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="todayCount">0</div>
+                    <div class="stat-label">Today's Submissions</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="refresh-btn" onclick="loadAdmissions()">↻ Refresh</button>
+                <a href="{{ url_for('admin_logout') }}" class="logout-btn">🚪 Logout</a>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Workplace</th>
+                        <th>Picture</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="admissionsTable">
+                    <tr class="loading">
+                        <td colspan="8"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Admission Details</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadAdmissions() {
+            try {
+                const response = await fetch('/api/admissions');
+                const admissions = await response.json();
+
+                const tbody = document.getElementById('admissionsTable');
+                tbody.innerHTML = '';
+
+                if (admissions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="no-data">No submissions yet</td></tr>';
+                    updateStats([], []);
+                    return;
+                }
+
+                const today = new Date().toDateString();
+                let todayCount = 0;
+
+                admissions.forEach(admission => {
+                    const date = new Date(admission.submission_date);
+                    const dateString = date.toLocaleDateString();
+                    
+                    if (date.toDateString() === today) {
+                        todayCount++;
+                    }
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${admission.id}</td>
+                        <td>${escapeHtml(admission.name)}</td>
+                        <td>${escapeHtml(admission.phone)}</td>
+                        <td>${escapeHtml(admission.workplace)}</td>
+                        <td>${admission.picture ? '✓' : '—'}</td>
+                        <td><span class="status-badge status-${admission.status}">${admission.status}</span></td>
+                        <td>${dateString}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-small btn-view" onclick="viewDetails(${admission.id})">View</button>
+                                ${admission.picture ? `<button class="btn-small btn-download" onclick="downloadPicture(${admission.id})">Download</button>` : ''}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                updateStats(admissions, todayCount);
+            } catch (error) {
+                console.error('Error loading admissions:', error);
+                document.getElementById('admissionsTable').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #e74c3c;">Error loading data</td></tr>';
+            }
+        }
+
+        function updateStats(admissions, todayCount) {
+            document.getElementById('totalCount').textContent = admissions.length;
+            document.getElementById('todayCount').textContent = todayCount;
+        }
+
+        async function viewDetails(id) {
+            try {
+                const response = await fetch(`/api/admissions/${id}`);
+                const admission = await response.json();
+
+                const date = new Date(admission.submission_date);
+                const modalBody = document.getElementById('modalBody');
+
+                let pictureHtml = '';
+                if (admission.picture) {
+                    pictureHtml = `<img src="/api/admissions/${id}/picture" alt="Picture" class="preview-image">`;
+                }
+
+                modalBody.innerHTML = `
+                    <div class="detail-row">
+                        <div class="detail-label">Name</div>
+                        <div class="detail-value">${escapeHtml(admission.name)}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Phone</div>
+                        <div class="detail-value">${escapeHtml(admission.phone)}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Workplace</div>
+                        <div class="detail-value">${escapeHtml(admission.workplace)}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value"><span class="status-badge status-${admission.status}">${admission.status}</span></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Submitted Date</div>
+                        <div class="detail-value">${date.toLocaleString()}</div>
+                    </div>
+                    ${pictureHtml ? `
+                    <div class="detail-row">
+                        <div class="detail-label">Picture</div>
+                        ${pictureHtml}
+                    </div>
+                    ` : ''}
+                `;
+
+                document.getElementById('detailModal').classList.add('show');
+            } catch (error) {
+                console.error('Error loading details:', error);
+                alert('Error loading admission details');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+
+        function downloadPicture(id) {
+            window.open(`/api/admissions/${id}/picture`, '_blank');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load admissions on page load
+        window.addEventListener('load', loadAdmissions);
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadAdmissions, 30000);
+
+        // Close modal on outside click
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'detailModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

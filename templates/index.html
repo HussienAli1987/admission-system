@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Admission System - QR Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .qr-section {
+            margin: 40px 0;
+        }
+
+        .qr-code-container {
+            background: #f8f9fa;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            display: inline-block;
+        }
+
+        .qr-code-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .instructions {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .instructions ol {
+            color: #555;
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .url-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .url-section p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .url-box {
+            background: white;
+            border: 2px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            word-break: break-all;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+
+        .btn-admin {
+            background: #111827;
+            color: #fff;
+            border: 2px solid #111827;
+        }
+
+        .btn-admin:hover {
+            background: #0b0f1a;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(17, 24, 39, 0.25);
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .security-badge {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-top: 20px;
+            border: 1px solid #2e7d32;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Online Admission System</h1>
+            <p>Scan the QR code below to start your admission process</p>
+        </div>
+
+        <div class="qr-section">
+            <div class="qr-code-container">
+                <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code for Admission Form">
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>📱 How to Use:</h3>
+            <ol>
+                <li>Scan the QR code with your phone camera or QR scanner app</li>
+                <li>You will be directed to the admission form</li>
+                <li>Fill in your information carefully</li>
+                <li>Upload your personal picture (JPG, PNG, or GIF)</li>
+                <li>Submit the form</li>
+                <li>You will receive a confirmation</li>
+            </ol>
+        </div>
+
+        <div class="url-section">
+            <p><strong>📌 Or visit directly:</strong></p>
+            <div class="url-box">{{ form_url }}</div>
+        </div>
+
+        <div class="action-buttons">
+            <a href="{{ url_for('admission_form') }}" class="btn btn-primary">
+                ➜ Go to Form
+            </a>
+            <button class="btn btn-secondary" onclick="downloadQR()">
+                ⬇️ Download QR Code
+            </button>
+            <a href="{{ url_for('admin_login') }}" class="btn btn-admin">
+                🔒 Admin Login
+            </a>
+        </div>
+
+        <div class="security-badge">
+            🔒 Secure & Encrypted Connection
+        </div>
+
+        <div class="footer">
+            <p>© 2026 Online Admission System. All rights reserved.</p>
+            <p>Your data is protected with encryption and secure storage.</p>
+        </div>
+    </div>
+
+    <script>
+        function downloadQR() {
+            const qrImage = document.querySelector('.qr-code-container img');
+            const link = document.createElement('a');
+            link.href = qrImage.src;
+            link.download = 'admission_qr_code.png';
+            link.click();
+        }
+    </script>
+</body>
+</html>
