@@ -1,6 +1,5 @@
-run = "python app.py"
-modules = ["python-3.10"]
+run = "python3 app.py"
+modules = ["python-3.11"]
 
 [nix]
-channel = "unstable"
-packages = ["python310"]
+channel = "stable-23_11"
