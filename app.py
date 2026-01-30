@@ -90,34 +90,49 @@ def login_required(f):
 
 def generate_qr_code(data):
     """Generate QR code as base64 image"""
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(data)
-    qr.make(fit=True)
+    try:
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
 
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Convert to base64
-    buffer = BytesIO()
-    img.save(buffer, format='PNG')
-    buffer.seek(0)
-    img_base64 = base64.b64encode(buffer.getvalue()).decode()
-    
-    return img_base64
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        img_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        return img_base64
+    except Exception as e:
+        app.logger.error(f"QR generation failed: {str(e)}")
+        return None
 
 
 @app.route('/')
 def index():
     """Main page with QR code"""
-    # Generate QR code pointing to the form
-    form_url = url_for('admission_form', _external=True)
-    qr_code = generate_qr_code(form_url)
-    
-    return render_template('index.html', qr_code=qr_code, form_url=form_url)
+    try:
+        # Generate QR code pointing to the form
+        # Handle both local and Replit URLs
+        if request.host_url:
+            form_url = request.host_url.rstrip('/') + url_for('admission_form')
+        else:
+            form_url = url_for('admission_form', _external=True)
+        
+        qr_code = generate_qr_code(form_url)
+        
+        return render_template('index.html', qr_code=qr_code, form_url=form_url)
+    except Exception as e:
+        # Fallback if QR generation fails
+        app.logger.error(f"QR Code generation error: {str(e)}")
+        form_url = url_for('admission_form')
+        return render_template('index.html', qr_code=None, form_url=form_url, error="QR Code generation temporarily unavailable")
 
 
 @app.route('/admission-form')
