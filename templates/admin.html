@@ -196,6 +196,96 @@
             background: #da190b;
         }
 
+        .btn-archive {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-archive:hover {
+            background: #e68900;
+        }
+
+        .archived-row {
+            opacity: 0.6;
+            background: #f5f5f5 !important;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: auto;
+        }
+
+        .filter-btn:hover {
+            background: #764ba2;
+        }
+
+        .clear-btn {
+            padding: 8px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: auto;
+        }
+
+        .clear-btn:hover {
+            background: #5a6268;
+        }
+
+        .toggle-archived {
+            padding: 8px 20px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: auto;
+        }
+
+        .toggle-archived:hover {
+            background: #138496;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -342,11 +432,35 @@
                     <div class="stat-value" id="todayCount">0</div>
                     <div class="stat-label">Today's Submissions</div>
                 </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="archivedCount">0</div>
+                    <div class="stat-label">Archived</div>
+                </div>
             </div>
             <div style="display: flex; gap: 10px;">
                 <button class="refresh-btn" onclick="loadAdmissions()">↻ Refresh</button>
                 <a href="{{ url_for('admin_logout') }}" class="logout-btn">🚪 Logout</a>
             </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>From Date:</label>
+                <input type="date" id="dateFrom" class="filter-input">
+            </div>
+            <div class="filter-group">
+                <label>To Date:</label>
+                <input type="date" id="dateTo" class="filter-input">
+            </div>
+            <div class="filter-group">
+                <label>Search Name:</label>
+                <input type="text" id="searchName" class="filter-input" placeholder="Search by name...">
+            </div>
+            <button class="filter-btn" onclick="applyFilters()">🔍 Search</button>
+            <button class="clear-btn" onclick="clearFilters()">✕ Clear</button>
+            <button class="toggle-archived" onclick="toggleShowArchived()" id="toggleArchivedBtn">
+                👁️ Show Archived
+            </button>
         </div>
 
         <div class="table-container">
@@ -360,12 +474,13 @@
                         <th>Picture</th>
                         <th>Status</th>
                         <th>Date</th>
+                        <th>Archive Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="admissionsTable">
                     <tr class="loading">
-                        <td colspan="8"></td>
+                        <td colspan="9"></td>
                     </tr>
                 </tbody>
             </table>
@@ -386,60 +501,167 @@
     </div>
 
     <script>
+        let allAdmissions = [];
+        let showArchived = false;
+
         async function loadAdmissions() {
             try {
                 const response = await fetch('/api/admissions');
-                const admissions = await response.json();
-
-                const tbody = document.getElementById('admissionsTable');
-                tbody.innerHTML = '';
-
-                if (admissions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="no-data">No submissions yet</td></tr>';
-                    updateStats([], []);
-                    return;
-                }
-
-                const today = new Date().toDateString();
-                let todayCount = 0;
-
-                admissions.forEach(admission => {
-                    const date = new Date(admission.submission_date);
-                    const dateString = date.toLocaleDateString();
-                    
-                    if (date.toDateString() === today) {
-                        todayCount++;
-                    }
-
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${admission.id}</td>
-                        <td>${escapeHtml(admission.name)}</td>
-                        <td>${escapeHtml(admission.phone)}</td>
-                        <td>${escapeHtml(admission.workplace)}</td>
-                        <td>${admission.picture ? '✓' : '—'}</td>
-                        <td><span class="status-badge status-${admission.status}">${admission.status}</span></td>
-                        <td>${dateString}</td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-small btn-view" onclick="viewDetails(${admission.id})">View</button>
-                                ${admission.picture ? `<button class="btn-small btn-download" onclick="downloadPicture(${admission.id})">Download</button>` : ''}
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-                updateStats(admissions, todayCount);
+                allAdmissions = await response.json();
+                displayAdmissions(allAdmissions);
             } catch (error) {
                 console.error('Error loading admissions:', error);
-                document.getElementById('admissionsTable').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #e74c3c;">Error loading data</td></tr>';
+                document.getElementById('admissionsTable').innerHTML = '<tr><td colspan="9" style="text-align: center; color: #e74c3c;">Error loading data</td></tr>';
             }
         }
 
-        function updateStats(admissions, todayCount) {
+        function displayAdmissions(admissions) {
+            const tbody = document.getElementById('admissionsTable');
+            tbody.innerHTML = '';
+
+            if (admissions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="no-data">No submissions found</td></tr>';
+                updateStats([], 0, 0);
+                return;
+            }
+
+            const today = new Date().toDateString();
+            let todayCount = 0;
+            let archivedCount = 0;
+
+            // Filter based on archive view
+            const filtered = admissions.filter(a => showArchived ? a.archived : !a.archived);
+
+            filtered.forEach(admission => {
+                const date = new Date(admission.submission_date);
+                const dateString = date.toLocaleDateString();
+                
+                if (date.toDateString() === today && !admission.archived) {
+                    todayCount++;
+                }
+
+                if (admission.archived) {
+                    archivedCount++;
+                }
+
+                const row = document.createElement('tr');
+                if (admission.archived) {
+                    row.classList.add('archived-row');
+                }
+                
+                row.innerHTML = `
+                    <td>${admission.id}</td>
+                    <td>${escapeHtml(admission.name)}</td>
+                    <td>${escapeHtml(admission.phone)}</td>
+                    <td>${escapeHtml(admission.workplace)}</td>
+                    <td>${admission.picture ? '✓' : '—'}</td>
+                    <td><span class="status-badge status-${admission.status}">${admission.status}</span></td>
+                    <td>${dateString}</td>
+                    <td>${admission.archived ? '<span style="color: #ff9800;">📦 Archived</span>' : ''}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-view" onclick="viewDetails(${admission.id})">View</button>
+                            ${admission.picture ? `<button class="btn-small btn-download" onclick="downloadPicture(${admission.id})">Download</button>` : ''}
+                            <button class="btn-small btn-archive" onclick="archiveAdmission(${admission.id})">${admission.archived ? 'Unarchive' : 'Archive'}</button>
+                            <button class="btn-small btn-delete" onclick="deleteAdmission(${admission.id})">Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateStats(admissions, todayCount, archivedCount);
+        }
+
+        function applyFilters() {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+
+            let filtered = [...allAdmissions];
+
+            // Filter by date range
+            if (dateFrom) {
+                const fromDate = new Date(dateFrom);
+                fromDate.setHours(0, 0, 0, 0);
+                filtered = filtered.filter(a => new Date(a.submission_date) >= fromDate);
+            }
+
+            if (dateTo) {
+                const toDate = new Date(dateTo);
+                toDate.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(a => new Date(a.submission_date) <= toDate);
+            }
+
+            // Filter by name
+            if (searchName) {
+                filtered = filtered.filter(a => a.name.toLowerCase().includes(searchName));
+            }
+
+            displayAdmissions(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            document.getElementById('searchName').value = '';
+            displayAdmissions(allAdmissions);
+        }
+
+        function toggleShowArchived() {
+            showArchived = !showArchived;
+            const btn = document.getElementById('toggleArchivedBtn');
+            btn.textContent = showArchived ? '👁️ Show Active' : '👁️ Show Archived';
+            displayAdmissions(allAdmissions);
+        }
+
+        async function deleteAdmission(id) {
+            if (!confirm('Are you sure you want to delete this admission? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admissions/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Admission deleted successfully!');
+                    loadAdmissions();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting admission:', error);
+                alert('Error deleting admission');
+            }
+        }
+
+        async function archiveAdmission(id) {
+            try {
+                const response = await fetch(`/api/admissions/${id}/archive`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    loadAdmissions();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error archiving admission:', error);
+                alert('Error archiving admission');
+            }
+        }
+
+        function updateStats(admissions, todayCount, archivedCount) {
             document.getElementById('totalCount').textContent = admissions.length;
             document.getElementById('todayCount').textContent = todayCount;
+            document.getElementById('archivedCount').textContent = archivedCount;
         }
 
         async function viewDetails(id) {

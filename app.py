@@ -5,6 +5,7 @@ Secure Flask application for collecting admission data
 
 from flask import Flask, render_template, request, jsonify, send_file, url_for, session, redirect
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -40,6 +41,30 @@ CORS(app)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 
+def ensure_schema():
+    """Ensure required columns exist in SQLite database."""
+    try:
+        with db.engine.connect() as conn:
+            result = conn.execute(text("PRAGMA table_info(admission)"))
+            existing_cols = {row[1] for row in result}
+
+            required_cols = {
+                'nationality': "ALTER TABLE admission ADD COLUMN nationality VARCHAR(100) NOT NULL DEFAULT ''",
+                'activity': "ALTER TABLE admission ADD COLUMN activity VARCHAR(200) NOT NULL DEFAULT ''",
+                'picture_hash': "ALTER TABLE admission ADD COLUMN picture_hash VARCHAR(64)",
+                'ip_address': "ALTER TABLE admission ADD COLUMN ip_address VARCHAR(50)",
+                'status': "ALTER TABLE admission ADD COLUMN status VARCHAR(20) DEFAULT 'submitted'",
+                'notes': "ALTER TABLE admission ADD COLUMN notes TEXT",
+                'archived': "ALTER TABLE admission ADD COLUMN archived BOOLEAN DEFAULT 0",
+            }
+
+            for col, ddl in required_cols.items():
+                if col not in existing_cols:
+                    conn.execute(text(ddl))
+    except Exception as exc:
+        app.logger.error(f"Schema check failed: {exc}")
+
+
 # Database Model
 class Admission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -54,6 +79,7 @@ class Admission(db.Model):
     ip_address = db.Column(db.String(50), nullable=True)
     status = db.Column(db.String(20), default='submitted')  # submitted, verified, approved
     notes = db.Column(db.Text, nullable=True)
+    archived = db.Column(db.Boolean, default=False)
 
     def to_dict(self):
         return {
@@ -65,7 +91,8 @@ class Admission(db.Model):
             'activity': self.activity,
             'picture': self.picture,
             'submission_date': self.submission_date.isoformat(),
-            'status': self.status
+            'status': self.status,
+            'archived': self.archived
         }
 
 
@@ -282,6 +309,48 @@ def get_picture(admission_id):
     return jsonify({'error': 'Picture not found'}), 404
 
 
+@app.route('/api/admissions/<int:admission_id>', methods=['DELETE'])
+@login_required
+def delete_admission(admission_id):
+    """Delete an admission"""
+    try:
+        admission = Admission.query.get_or_404(admission_id)
+        
+        # Delete picture file if exists
+        if admission.picture:
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], admission.picture)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        
+        db.session.delete(admission)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Admission deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/admissions/<int:admission_id>/archive', methods=['POST'])
+@login_required
+def archive_admission(admission_id):
+    """Archive/Unarchive an admission"""
+    try:
+        admission = Admission.query.get_or_404(admission_id)
+        admission.archived = not admission.archived
+        db.session.commit()
+        
+        action = 'archived' if admission.archived else 'unarchived'
+        return jsonify({
+            'success': True, 
+            'message': f'Admission {action} successfully',
+            'archived': admission.archived
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/health')
 def health():
     """Health check endpoint"""
@@ -302,6 +371,7 @@ def server_error(error):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        ensure_schema()
     
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') == 'development'
