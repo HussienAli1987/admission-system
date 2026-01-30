@@ -216,9 +216,16 @@
         </div>
 
         <div class="qr-section">
+            {% if qr_code %}
             <div class="qr-code-container">
                 <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code for Admission Form">
             </div>
+            {% else %}
+            <div class="qr-code-container" style="padding: 50px;">
+                <p style="color: #666; font-size: 18px;">⚠️ QR Code temporarily unavailable</p>
+                <p style="color: #999; font-size: 14px; margin-top: 10px;">Please use the direct link below</p>
+            </div>
+            {% endif %}
         </div>
 
         <div class="instructions">

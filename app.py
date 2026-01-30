@@ -28,7 +28,9 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 # Admin credentials (set your admin username/password)
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'egy$4119'))
+# Default password: egy$4119 (change in environment variable ADMIN_PASSWORD)
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'egy$4119')
+ADMIN_PASSWORD_HASH = generate_password_hash(ADMIN_PASSWORD)
 
 # Initialize extensions
 db = SQLAlchemy(app)
